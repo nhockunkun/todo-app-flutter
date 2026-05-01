@@ -4,10 +4,24 @@ import '../constants/colors.dart';
 import '../model/todo.dart';
 import '../widgets/todo_item.dart';
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   Home({Key? key}) : super(key: key);
 
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
   final todoList = Todo.todoList();
+  List<Todo> _foundToDo = [];
+  final _todoController = TextEditingController();
+
+  @override
+  void initState() {
+    _foundToDo = todoList;
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +48,12 @@ class Home extends StatelessWidget {
                         ),
                       ),
 
-                      for (Todo todoo in todoList) ToDoItem(todo: todoo),
+                      for (Todo todoo in _foundToDo)
+                        ToDoItem(
+                            todo: todoo,
+                            onToDoChanged: _handleToDoChange,
+                            onDeleteItem: _deleteTodoItem,
+                        ),
                     ],
                   ),
                 ),
@@ -66,6 +85,7 @@ class Home extends StatelessWidget {
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: TextField(
+                      controller: _todoController,
                       decoration: InputDecoration(
                         hintText: 'Add a new todo item',
                         border: InputBorder.none
@@ -80,7 +100,9 @@ class Home extends StatelessWidget {
                   ),
                   child: ElevatedButton(
                     child: Text('+', style: TextStyle(fontSize: 40, color: Colors.white),),
-                    onPressed: (){},
+                    onPressed: (){
+                      _addToDoItem(_todoController.text);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: tdBlue,
                       minimumSize: Size(60, 60),
@@ -96,6 +118,38 @@ class Home extends StatelessWidget {
     );
   }
 
+  void _handleToDoChange(Todo todo){
+    setState(() {
+      todo.isDone = !todo.isDone;
+    });
+  }
+
+  void _deleteTodoItem(String id){
+    setState(() {
+      todoList.removeWhere((item) => item.id == id);
+    });
+  }
+
+  void _addToDoItem(String todo){
+    setState(() {
+      todoList.add(Todo(id: DateTime.now().microsecondsSinceEpoch.toString(), todoText: todo));
+    });
+    _todoController.clear();
+  }
+
+  void _runFilter(String enterKeyword){
+    List<Todo> results = [];
+    if(enterKeyword.isEmpty){
+      results = todoList;
+    }else{
+      results = todoList.where((item) => item.todoText!.toLowerCase().contains(enterKeyword.toLowerCase())).toList();
+    }
+
+    setState(() {
+      _foundToDo = results;
+    });
+  }
+
   Container searchBox() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 15),
@@ -104,6 +158,7 @@ class Home extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: TextField(
+        onChanged: (value) => _runFilter(value),
         decoration: InputDecoration(
           contentPadding: EdgeInsets.all(0),
           prefixIcon: Icon(Icons.search, color: tdBlack, size: 20),
@@ -135,4 +190,6 @@ class Home extends StatelessWidget {
       ),
     );
   }
+
+
 }
